@@ -113,3 +113,14 @@ export function hashPassword(password: string): number[] {
 export function hashToHex(hash: number[]): string {
   return Buffer.from(hash).toString("hex");
 }
+
+import crypto from "crypto";
+
+/**
+ * Deterministically generate a full Ed25519 Keypair from a user's unique ID.
+ * This allows the Node API to sign transactions on behalf of the user.
+ */
+export function deriveUserKeypair(userId: string): Keypair {
+  const hash = crypto.createHash("sha256").update(userId).digest();
+  return Keypair.fromSeed(hash);
+}

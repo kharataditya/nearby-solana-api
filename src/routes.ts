@@ -13,6 +13,7 @@ import {
   lamportsToSol,
   hashPassword,
   hashToHex,
+  deriveUserKeypair,
 } from "./solana";
 
 const router = Router();
@@ -101,7 +102,9 @@ router.post("/create-event", async (req: Request, res: Response): Promise<any> =
     }
 
     // ── Derive PDAs ──────────────────────────────────────────────────────
-    const organizerPubkey = new PublicKey(organizerWallet);
+    // The Flutter app sends the raw Supabase UID as organizerWallet
+    const userKeypair = deriveUserKeypair(organizerWallet);
+    const organizerPubkey = userKeypair.publicKey;
     const [eventPDA] = deriveEventPDA(organizerPubkey);
     const stakeAmountLamports = solToLamports(stakeAmountSol);
     const passwordHashArray = hashPassword(password);
@@ -120,7 +123,7 @@ router.post("/create-event", async (req: Request, res: Response): Promise<any> =
         organizer: organizerPubkey,
         systemProgram: PublicKey.default,
       })
-      .signers([platformKeypair])
+      .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
     return res.json({
@@ -150,7 +153,9 @@ router.post("/stake-for-event", async (req: Request, res: Response): Promise<any
       });
     }
 
-    const attendeePubkey = new PublicKey(attendeeWallet);
+    // Flutter sends the Supabase UID as attendeeWallet
+    const userKeypair = deriveUserKeypair(attendeeWallet);
+    const attendeePubkey = userKeypair.publicKey;
     const eventPubkey = new PublicKey(eventPDAString);
 
     // Derive PDAs
@@ -171,7 +176,7 @@ router.post("/stake-for-event", async (req: Request, res: Response): Promise<any
         attendee: attendeePubkey,
         systemProgram: PublicKey.default,
       })
-      .signers([platformKeypair])
+      .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
     return res.json({
@@ -200,7 +205,9 @@ router.post("/verify-attendance", async (req: Request, res: Response): Promise<a
       });
     }
 
-    const attendeePubkey = new PublicKey(attendeeWallet);
+    // Flutter sends the Supabase UID as attendeeWallet
+    const userKeypair = deriveUserKeypair(attendeeWallet);
+    const attendeePubkey = userKeypair.publicKey;
     const eventPubkey = new PublicKey(eventPDAString);
     const [stakePDA] = deriveStakePDA(eventPubkey, attendeePubkey);
 
@@ -213,7 +220,7 @@ router.post("/verify-attendance", async (req: Request, res: Response): Promise<a
         stakeRecord: stakePDA,
         attendee: attendeePubkey,
       })
-      .signers([platformKeypair])
+      .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
     return res.json({
@@ -242,7 +249,9 @@ router.post("/finalize-event", async (req: Request, res: Response): Promise<any>
       });
     }
 
-    const organizerPubkey = new PublicKey(organizerWallet);
+    // Flutter sends the Supabase UID as organizerWallet
+    const userKeypair = deriveUserKeypair(organizerWallet);
+    const organizerPubkey = userKeypair.publicKey;
     const eventPubkey = new PublicKey(eventPDAString);
     const [vaultPDA] = deriveVaultPDA(eventPubkey);
 
@@ -256,7 +265,7 @@ router.post("/finalize-event", async (req: Request, res: Response): Promise<any>
         platformWallet: PLATFORM_WALLET,
         systemProgram: PublicKey.default,
       })
-      .signers([platformKeypair])
+      .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
     // ── Parse RevenueDistributed event from transaction logs ──────────────
@@ -375,7 +384,9 @@ router.get(
   async (req: Request, res: Response): Promise<any> => {
     try {
       const eventPubkey = new PublicKey(req.params.eventPDA);
-      const attendeePubkey = new PublicKey(req.params.attendeeWallet);
+      // Flutter sends the Supabase UID as attendeeWallet
+      const userKeypair = deriveUserKeypair(req.params.attendeeWallet);
+      const attendeePubkey = userKeypair.publicKey;
 
       const [stakePDA] = deriveStakePDA(eventPubkey, attendeePubkey);
 
