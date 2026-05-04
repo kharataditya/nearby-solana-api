@@ -1,0 +1,133 @@
+{
+  "address": "CvqzzBzjGeXQoWjuwtSmWSipWFtum3rzWBq7wtAEpX9x",
+  "version": "0.1.0",
+  "name": "nearby_events",
+  "instructions": [
+    {
+      "name": "createEvent",
+      "discriminator": [49, 219, 29, 203, 22, 98, 100, 87],
+      "accounts": [
+        { "name": "event", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [101, 118, 101, 110, 116] }, { "kind": "account", "path": "organizer" }] } },
+        { "name": "organizer", "writable": true, "signer": true },
+        { "name": "systemProgram", "address": "11111111111111111111111111111111" }
+      ],
+      "args": [
+        { "name": "name", "type": "string" },
+        { "name": "location", "type": "string" },
+        { "name": "stakeAmount", "type": "u64" },
+        { "name": "passwordHash", "type": { "array": ["u8", 32] } },
+        { "name": "eventDeadline", "type": "i64" }
+      ]
+    },
+    {
+      "name": "stakeForEvent",
+      "discriminator": [217, 71, 207, 21, 123, 172, 13, 85],
+      "accounts": [
+        { "name": "event", "writable": true },
+        { "name": "stakeRecord", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [115, 116, 97, 107, 101] }, { "kind": "account", "path": "event" }, { "kind": "account", "path": "attendee" }] } },
+        { "name": "vault", "writable": true, "pda": { "seeds": [{ "kind": "const", "value": [118, 97, 117, 108, 116] }, { "kind": "account", "path": "event" }] } },
+        { "name": "attendee", "writable": true, "signer": true },
+        { "name": "systemProgram", "address": "11111111111111111111111111111111" }
+      ],
+      "args": []
+    },
+    {
+      "name": "verifyAttendance",
+      "discriminator": [210, 147, 173, 144, 13, 150, 214, 2],
+      "accounts": [
+        { "name": "event", "writable": true },
+        { "name": "stakeRecord", "writable": true },
+        { "name": "attendee", "signer": true }
+      ],
+      "args": [
+        { "name": "password", "type": "string" }
+      ]
+    },
+    {
+      "name": "finalizeEvent",
+      "discriminator": [88, 246, 123, 105, 100, 148, 170, 236],
+      "accounts": [
+        { "name": "event", "writable": true },
+        { "name": "vault", "writable": true },
+        { "name": "organizer", "writable": true, "signer": true },
+        { "name": "platformWallet", "writable": true },
+        { "name": "systemProgram", "address": "11111111111111111111111111111111" }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Event",
+      "discriminator": [125, 192, 125, 158, 9, 115, 152, 233]
+    },
+    {
+      "name": "StakeRecord",
+      "discriminator": [174, 163, 11, 208, 150, 236, 11, 205]
+    }
+  ],
+  "events": [
+    {
+      "name": "RevenueDistributed",
+      "discriminator": [78, 195, 188, 214, 203, 219, 199, 87]
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "EventNotActive", "msg": "Event is not active" },
+    { "code": 6001, "name": "AlreadyStaked", "msg": "Already staked for this event" },
+    { "code": 6002, "name": "InvalidPassword", "msg": "Invalid event password" },
+    { "code": 6003, "name": "DeadlineNotReached", "msg": "Event deadline has not been reached" },
+    { "code": 6004, "name": "InsufficientFunds", "msg": "Insufficient funds to stake" },
+    { "code": 6005, "name": "AlreadyVerified", "msg": "Attendance already verified" },
+    { "code": 6006, "name": "Unauthorized", "msg": "Unauthorized action" }
+  ],
+  "types": [
+    {
+      "name": "Event",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "organizer", "type": "pubkey" },
+          { "name": "name", "type": "string" },
+          { "name": "location", "type": "string" },
+          { "name": "stakeAmount", "type": "u64" },
+          { "name": "passwordHash", "type": { "array": ["u8", 32] } },
+          { "name": "isActive", "type": "bool" },
+          { "name": "attendeeCount", "type": "u32" },
+          { "name": "verifiedCount", "type": "u32" },
+          { "name": "totalStaked", "type": "u64" },
+          { "name": "eventDeadline", "type": "i64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "StakeRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "attendee", "type": "pubkey" },
+          { "name": "event", "type": "pubkey" },
+          { "name": "stakedValue", "type": "u64" },
+          { "name": "isVerified", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "RevenueDistributed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "slashedPool", "type": "u64" },
+          { "name": "hostAmount", "type": "u64" },
+          { "name": "perAttendeeBonus", "type": "u64" },
+          { "name": "platformFee", "type": "u64" }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "address": "CvqzzBzjGeXQoWjuwtSmWSipWFtum3rzWBq7wtAEpX9x"
+  }
+}
