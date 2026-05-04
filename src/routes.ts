@@ -402,7 +402,7 @@ router.get(
     try {
       const eventPubkey = new PublicKey(req.params.eventPDA);
       // Flutter sends the Supabase UID as attendeeWallet
-      const userKeypair = deriveUserKeypair(req.params.attendeeWallet);
+      const userKeypair = deriveUserKeypair(String(req.params.attendeeWallet));
       const attendeePubkey = userKeypair.publicKey;
 
       const [stakePDA] = deriveStakePDA(eventPubkey, attendeePubkey);
