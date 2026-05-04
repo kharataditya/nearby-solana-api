@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import {
   program,
@@ -109,6 +109,13 @@ router.post("/create-event", async (req: Request, res: Response): Promise<any> =
     const stakeAmountLamports = solToLamports(stakeAmountSol);
     const passwordHashArray = hashPassword(password);
 
+    // Fund the organizer's generated wallet with enough SOL for account rent (~3,000,000 lamports)
+    const fundInstruction = SystemProgram.transfer({
+      fromPubkey: platformKeypair.publicKey,
+      toPubkey: organizerPubkey,
+      lamports: 5_000_000, // 0.005 SOL buffer for rent
+    });
+
     // ── Send transaction ─────────────────────────────────────────────────
     const tx = await program.methods
       .createEvent(
@@ -123,6 +130,7 @@ router.post("/create-event", async (req: Request, res: Response): Promise<any> =
         organizer: organizerPubkey,
         systemProgram: PublicKey.default,
       })
+      .preInstructions([fundInstruction])
       .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
@@ -166,6 +174,14 @@ router.post("/stake-for-event", async (req: Request, res: Response): Promise<any
     const eventAccount = await program.account.event.fetch(eventPubkey);
     const stakedAmount = lamportsToSol(eventAccount.stakeAmount.toNumber());
 
+    // Fund the attendee's generated wallet with the required stake amount + rent buffer
+    const requiredLamports = eventAccount.stakeAmount.toNumber() + 5_000_000;
+    const fundInstruction = SystemProgram.transfer({
+      fromPubkey: platformKeypair.publicKey,
+      toPubkey: attendeePubkey,
+      lamports: requiredLamports,
+    });
+
     // ── Send transaction ─────────────────────────────────────────────────
     const tx = await program.methods
       .stakeForEvent()
@@ -176,6 +192,7 @@ router.post("/stake-for-event", async (req: Request, res: Response): Promise<any
         attendee: attendeePubkey,
         systemProgram: PublicKey.default,
       })
+      .preInstructions([fundInstruction])
       .signers([platformKeypair, userKeypair])
       .rpc({ commitment: "confirmed" });
 
